@@ -78,28 +78,27 @@ jobs:
     # 6. 구글 테스트 실행 (강력한 경로 추적 버전)
     - name: Run Tests
       run: |
-        # 실행 데이터 파일명 설정
         $env:LLVM_PROFILE_FILE = "${{ github.workspace }}\default.profraw"
-        
-        # 1. 빌드 결과물 경로 확인 (Ninja는 보통 build/ 아래 바로 생성)
-        $TEST_EXE = "${{ github.workspace }}\build\run_tests.exe"
-        
-        if (!(Test-Path $TEST_EXE)) {
-            Write-Host "Searching for run_tests.exe in subdirectories..."
-            $TEST_EXE = (Get-ChildItem -Path "${{ github.workspace }}\build" -Filter "run_tests.exe" -Recurse).FullName[0]
-        }
+        $BUILD_DIR = "${{ github.workspace }}\build"
 
-        if ($TEST_EXE -and (Test-Path $TEST_EXE)) {
+        # 1. 파일 목록 출력 (디버깅용: 파일이 어디에 생겼는지 로그로 확인 가능)
+        Write-Host "Listing files in build directory for debugging:"
+        Get-ChildItem -Path $BUILD_DIR -Recurse -Filter "*.exe" | Select-Object FullName
+
+        # 2. run_tests.exe 찾기
+        $testExeObject = Get-ChildItem -Path $BUILD_DIR -Filter "run_tests.exe" -Recurse
+        
+        if ($testExeObject) {
+            # 만약 여러 개가 나오면 첫 번째 파일을 사용
+            $TEST_EXE = if ($testExeObject.Count -gt 1) { $testExeObject[0].FullName } else { $testExeObject.FullName }
             Write-Host "Executing test: $TEST_EXE"
-            # & 연산자를 사용하여 실행
             & $TEST_EXE
             Start-Sleep -s 2
         } else {
-            Write-Error "Could not find run_tests.exe! Build might have failed or output path is wrong."
+            Write-Error "CRITICAL: run_tests.exe not found anywhere in build directory!"
             exit 1
         }
       shell: powershell
-
     # 7. 커버리지 리포트 생성 (루트 경로의 profraw 사용)
     - name: Generate Coverage Report
       run: |
