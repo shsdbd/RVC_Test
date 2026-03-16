@@ -71,6 +71,7 @@ jobs:
         -DCMAKE_CXX_COMPILER=clang++
         -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        -DCMAKE_CXX_CPPCHECK="C:/Program Files/Cppcheck/cppcheck.exe;--enable=all;--inconclusive;--force;--inline-suppr;--error-exitcode=1;--suppress=missingIncludeSystem"
       shell: powershell
 
     # 6. 빌드 및 테스트 (기존과 동일)
