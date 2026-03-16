@@ -106,23 +106,24 @@ jobs:
     # 7. 커버리지 리포트 생성 (루트 경로의 profraw 사용)
     - name: Generate Coverage Report
       run: |
-        $PROFRAW = "default.profraw"
-        $PROFDATA = "default.profdata"
+        $PROFRAW = "${{ github.workspace }}\default.profraw"
+        $PROFDATA = "${{ github.workspace }}\default.profdata"
+        $REPORT_FILE = "${{ github.workspace }}\coverage_report.txt"
+        $TEST_EXE = "${{ github.workspace }}\build\run_tests.exe"
         
-        # 1. profraw 파일이 있는지 확인
         if (Test-Path $PROFRAW) {
             Write-Host "Found $PROFRAW. Generating report..."
             
-            # 데이터 병합
-            & "C:\Program Files\LLVM\bin\llvm-profdata.exe" merge -sparse $PROFRAW -o $PROFDATA
+            # 1. 데이터 병합 (절대 경로 사용)
+            & "C:\Program Files\LLVM\bin\llvm-profdata.exe" merge -sparse "$PROFRAW" -o "$PROFDATA"
             
-            # 상세 리포트 생성 (다운로드용)
-            & "C:\Program Files\LLVM\bin\llvm-cov.exe" show ./build/run_tests.exe -instr-profile=$PROFDATA > coverage_report.txt
+            # 2. 상세 리포트 생성
+            & "C:\Program Files\LLVM\bin\llvm-cov.exe" show "$TEST_EXE" -instr-profile="$PROFDATA" > "$REPORT_FILE"
             
-            # 요약 리포트 출력 (GitHub Actions 로그 확인용)
-            & "C:\Program Files\LLVM\bin\llvm-cov.exe" report ./build/run_tests.exe -instr-profile=$PROFDATA
+            # 3. 요약 리포트 출력
+            & "C:\Program Files\LLVM\bin\llvm-cov.exe" report "$TEST_EXE" -instr-profile="$PROFDATA"
         } else {
-            Write-Error "Error: $PROFRAW not found! Test execution might have failed to generate profile data."
+            Write-Error "Error: $PROFRAW not found!"
             exit 1
         }
       shell: powershell
