@@ -33,9 +33,10 @@ find_package(GTest CONFIG REQUIRED)
 # 1. Clang-Tidy (C++ 현대적 문법 및 품질 검사)
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 if(CLANG_TIDY_EXE)
+    # [4] 정적 분석 도구 설정 부분
     set(CMAKE_CXX_CLANG_TIDY 
         ${CLANG_TIDY_EXE}
-        "-checks=-*,bugprone-*,clang-analyzer-*,cppcoreguidelines-*,performance-*,portability-*,modernize-*"
+        "-checks=-*,bugprone-*,clang-analyzer-*,cppcoreguidelines-*,performance-*,portability-*,modernize-*,-modernize-use-trailing-return-type" # 맨 끝에 추가
         "--warnings-as-errors=*"
     )
 endif()
