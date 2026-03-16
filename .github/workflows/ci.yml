@@ -1,0 +1,73 @@
+name: C++ CI with Clang, Ninja and Static Analysis
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest  # 로컬과 동일하게 윈도우 환경 사용
+
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg/b_cache
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    # 1. LLVM (Clang) & Ninja 설치
+    - name: Install LLVM and Ninja
+      run: |
+        choco install llvm -y
+        choco install ninja -y
+      shell: powershell
+
+    # 2. Cppcheck 설치
+    - name: Install Cppcheck
+      run: choco install cppcheck -y
+      shell: powershell
+
+    # 3. vcpkg 설정 및 캐싱 (빌드 속도 최적화)
+    - name: Restore vcpkg and binary cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ github.workspace }}/vcpkg
+          ${{ github.workspace }}/vcpkg_installed
+        key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+        restore-keys: |
+          ${{ runner.os }}-vcpkg-
+
+    - name: Setup vcpkg
+      run: |
+        if (!(Test-Path "${{ env.VCPKG_ROOT }}")) {
+          git clone https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
+          & "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.bat"
+        }
+      shell: powershell
+
+    # 4. CMake 구성 (로컬과 동일한 옵션)
+    - name: Configure CMake
+      run: >
+        cmake -G "Ninja" -B build
+        -DCMAKE_CXX_COMPILER=clang++
+        -DCMAKE_TOOLCHAIN_FILE="${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake"
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      shell: powershell
+
+    # 5. 빌드 및 정적 분석 (clang-tidy, cppcheck 자동 실행)
+    - name: Build and Static Analysis
+      run: cmake --build build
+      shell: powershell
+
+    # 6. 구글 테스트 실행
+    - name: Run Tests
+      run: |
+        cd build
+        ./run_tests.exe
+      shell: powershell
