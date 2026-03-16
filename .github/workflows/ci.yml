@@ -32,50 +32,89 @@ jobs:
       run: choco install cppcheck -y
       shell: powershell
 
-    # 3. vcpkg 설정 및 캐싱 (빌드 속도 최적화)
-    - name: Restore vcpkg and binary cache
+    # # 3. vcpkg 설정 및 캐싱 (빌드 속도 최적화)
+    # - name: Restore vcpkg and binary cache
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: |
+    #       ${{ github.workspace }}/vcpkg
+    #       ${{ github.workspace }}/vcpkg_installed
+    #     key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-vcpkg-
+
+    # - name: Setup vcpkg
+    #   uses: microsoft/vcpkg-action@v2
+    #   with:
+    #     pkgs: gtest
+    #     triplet: x64-windows
+    #     cache-key: ${{ runner.os }}-vcpkg
+    # #   run: |
+    # #     if (!(Test-Path "${{ env.VCPKG_ROOT }}")) {
+    # #       git clone https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
+    # #       & "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.bat"
+    # #     }
+    # #   shell: powershell
+    
+    # - name: Clean build directory
+    #   run: if (Test-Path build) { Remove-Item -Recurse -Force build }
+    #   shell: powershell
+
+    # # 4. CMake 구성 (로컬과 동일한 옵션)
+    # - name: Configure CMake
+    #   run: >
+    #     cmake -G "Ninja" -B build
+    #     -DCMAKE_CXX_COMPILER=clang++
+    #     -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    #     -DVCPKG_TARGET_TRIPLET=x64-windows
+    #     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    #   shell: powershell
+
+    # # 5. 빌드 및 정적 분석 (clang-tidy, cppcheck 자동 실행)
+    # - name: Build and Static Analysis
+    #   run: cmake --build build
+    #   shell: powershell
+
+    # # 6. 구글 테스트 실행
+    # - name: Run Tests
+    #   run: |
+    #     cd build
+    #     ./run_tests.exe
+    #   shell: powershell
+    # 3. vcpkg 캐싱 (빌드 속도 향상)
+    - name: Cache vcpkg
       uses: actions/cache@v4
       with:
         path: |
           ${{ github.workspace }}/vcpkg
           ${{ github.workspace }}/vcpkg_installed
         key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
-        restore-keys: |
-          ${{ runner.os }}-vcpkg-
 
-    - name: Setup vcpkg
-      uses: microsoft/vcpkg-action@v2
-      with:
-        pkgs: gtest
-        triplet: x64-windows
-        cache-key: ${{ runner.os }}-vcpkg
-    #   run: |
-    #     if (!(Test-Path "${{ env.VCPKG_ROOT }}")) {
-    #       git clone https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
-    #       & "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.bat"
-    #     }
-    #   shell: powershell
-    
-    - name: Clean build directory
-      run: if (Test-Path build) { Remove-Item -Recurse -Force build }
+    # 4. vcpkg 설치 및 GTest 준비
+    - name: Setup vcpkg and Install Dependencies
+      run: |
+        if (!(Test-Path "vcpkg")) {
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.bat
+        }
+        # vcpkg.json에 적힌 라이브러리(GTest)를 미리 설치
+        ./vcpkg/vcpkg install --triplet x64-windows
       shell: powershell
 
-    # 4. CMake 구성 (로컬과 동일한 옵션)
+    # 5. CMake 구성 (vcpkg 툴체인 경로 정확히 지정)
     - name: Configure CMake
       run: >
         cmake -G "Ninja" -B build
         -DCMAKE_CXX_COMPILER=clang++
         -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        -DVCPKG_TARGET_TRIPLET=x64-windows
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       shell: powershell
 
-    # 5. 빌드 및 정적 분석 (clang-tidy, cppcheck 자동 실행)
-    - name: Build and Static Analysis
+    # 6. 빌드 및 테스트 (기존과 동일)
+    - name: Build
       run: cmake --build build
       shell: powershell
 
-    # 6. 구글 테스트 실행
     - name: Run Tests
       run: |
         cd build
