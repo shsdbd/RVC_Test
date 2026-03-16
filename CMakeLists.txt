@@ -43,8 +43,16 @@ endif()
 
 # 2. Cppcheck (잠재적 런타임 버그 및 메모리 누수 검사)
 # --- Cppcheck ---
-find_program(CPPCHECK_EXE NAMES "cppcheck")
+# [4] 정적 분석 도구 설정
+find_program(CPPCHECK_EXE NAMES "cppcheck" PATHS "C:/Program Files/Cppcheck" NO_DEFAULT_PATH)
+
+# 만약 위 경로에 없으면 시스템 경로에서 찾음 (로컬용)
+if(NOT CPPCHECK_EXE)
+    find_program(CPPCHECK_EXE NAMES "cppcheck")
+endif()
+
 if(CPPCHECK_EXE)
+    message(STATUS "Using Cppcheck: ${CPPCHECK_EXE}")
     set(CMAKE_CXX_CPPCHECK 
         ${CPPCHECK_EXE} 
         "--enable=all" 
