@@ -134,3 +134,22 @@ jobs:
       with:
         name: code-coverage-report
         path: coverage_report.txt
+    # 9. SonarCloud 분석 수행
+    - name: Run SonarCloud Analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub에서 자동 제공
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # 우리가 등록한 Secret
+      run: |
+        # SonarScanner-build-wrapper를 사용하거나, CMake의 compile_commands를 활용
+        # 여기서는 이미 생성된 compile_commands.json과 coverage_report.txt를 전달합니다.
+        choco install sonarscanner -y
+        
+        sonar-scanner `
+          -Dsonar.projectKey=shsdbd_RVC_Test `
+          -Dsonar.organization=shsdbd `
+          -Dsonar.sources=src `
+          -Dsonar.tests=tests `
+          -Dsonar.cfamily.compile-commands=build/compile_commands.json `
+          -Dsonar.cpp.llvm.cov.reportPath=coverage_report.txt `
+          -Dsonar.host.url=https://sonarcloud.io
+      shell: powershell
