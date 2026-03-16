@@ -91,18 +91,26 @@ jobs:
         key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
 
     # 4. vcpkg 설치 및 GTest 준비
+    # 4. vcpkg 설치 및 GTest 준비 (절대 경로 및 파일 체크 버전)
     - name: Setup vcpkg and Install Dependencies
       run: |
-        if (!(Test-Path "${{ github.workspace }}/vcpkg/b_cache")) {
-          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/vcpkg/b_cache"
-        }
-        
-        if (!(Test-Path "vcpkg")) {
-          git clone https://github.com/microsoft/vcpkg.git
-          ./vcpkg/bootstrap-vcpkg.bat
+        $VCPKG_PATH = "${{ github.workspace }}\vcpkg"
+        $VCPKG_EXE = "$VCPKG_PATH\vcpkg.exe"
+
+        if (!(Test-Path "${{ github.workspace }}\vcpkg\b_cache")) {
+            New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\vcpkg\b_cache"
         }
 
-        .\vcpkg\vcpkg.exe install --triplet x64-windows
+        if (!(Test-Path $VCPKG_EXE)) {
+            Write-Host "vcpkg.exe not found. Starting installation..."
+            # 기존에 망가진 폴더가 있다면 삭제
+            if (Test-Path $VCPKG_PATH) { Remove-Item -Recurse -Force $VCPKG_PATH }
+            
+            git clone https://github.com/microsoft/vcpkg.git $VCPKG_PATH
+            & "$VCPKG_PATH\bootstrap-vcpkg.bat"
+        }
+
+        & $VCPKG_EXE install --triplet x64-windows --vcpkg-root $VCPKG_PATH
       shell: powershell
 
     # 5. CMake 구성 (vcpkg 툴체인 경로 정확히 지정)
