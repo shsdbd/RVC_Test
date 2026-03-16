@@ -44,11 +44,20 @@ jobs:
           ${{ runner.os }}-vcpkg-
 
     - name: Setup vcpkg
-      run: |
-        if (!(Test-Path "${{ env.VCPKG_ROOT }}")) {
-          git clone https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
-          & "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.bat"
-        }
+      uses: microsoft/vcpkg-action@v2
+      with:
+        pkgs: gtest
+        triplet: x64-windows
+        cache-key: ${{ runner.os }}-vcpkg
+    #   run: |
+    #     if (!(Test-Path "${{ env.VCPKG_ROOT }}")) {
+    #       git clone https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
+    #       & "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.bat"
+    #     }
+    #   shell: powershell
+    
+    - name: Clean build directory
+      run: if (Test-Path build) { Remove-Item -Recurse -Force build }
       shell: powershell
 
     # 4. CMake 구성 (로컬과 동일한 옵션)
@@ -56,7 +65,8 @@ jobs:
       run: >
         cmake -G "Ninja" -B build
         -DCMAKE_CXX_COMPILER=clang++
-        -DCMAKE_TOOLCHAIN_FILE="${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake"
+        -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        -DVCPKG_TARGET_TRIPLET=x64-windows
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       shell: powershell
 

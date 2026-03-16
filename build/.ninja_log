@@ -1,0 +1,5 @@
+# ninja log v7
+19	726	7953508875391440	CMakeFiles/app.dir/src/main.cpp.obj	bb88c79a53e047be
+727	1160	7953508882479269	app.exe	1f09c471097e1931
+17	1259	7953508399278780	CMakeFiles/run_tests.dir/tests/test_main.cpp.obj	d126004cdbf8439
+1260	1908	7953508411705222	run_tests.exe	fc597dbb5023dda2
