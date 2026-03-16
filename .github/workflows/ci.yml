@@ -75,29 +75,51 @@ jobs:
         -DCMAKE_CXX_CPPCHECK="C:/Program Files/Cppcheck/cppcheck.exe;--enable=all;--inconclusive;--force;--inline-suppr;--error-exitcode=1;--suppress=missingIncludeSystem"
       shell: powershell
 
-    # 6. 구글 테스트 실행 (LLVM_PROFILE_FILE 설정 추가)
+    # 6. 구글 테스트 실행 (강력한 경로 추적 버전)
     - name: Run Tests
       run: |
-        $env:LLVM_PROFILE_FILE = "default.profraw"
-        cd build
-        ./run_tests.exe
-        # 파일이 생성될 때까지 아주 잠시 대기 (안전장치)
-        Start-Sleep -s 2
+        # 실행 데이터 파일명 설정
+        $env:LLVM_PROFILE_FILE = "${{ github.workspace }}\default.profraw"
+        
+        # 1. 빌드 결과물 경로 확인 (Ninja는 보통 build/ 아래 바로 생성)
+        $TEST_EXE = "${{ github.workspace }}\build\run_tests.exe"
+        
+        if (!(Test-Path $TEST_EXE)) {
+            Write-Host "Searching for run_tests.exe in subdirectories..."
+            $TEST_EXE = (Get-ChildItem -Path "${{ github.workspace }}\build" -Filter "run_tests.exe" -Recurse).FullName[0]
+        }
+
+        if ($TEST_EXE -and (Test-Path $TEST_EXE)) {
+            Write-Host "Executing test: $TEST_EXE"
+            # & 연산자를 사용하여 실행
+            & $TEST_EXE
+            Start-Sleep -s 2
+        } else {
+            Write-Error "Could not find run_tests.exe! Build might have failed or output path is wrong."
+            exit 1
+        }
       shell: powershell
 
-    # 7. 커버리지 리포트 생성 (경로 명시)
+    # 7. 커버리지 리포트 생성 (루트 경로의 profraw 사용)
     - name: Generate Coverage Report
       run: |
-        # build 폴더 안에 생성되었을 파일을 루트로 가져오거나 경로 직접 지정
-        $PROFRAW = "build/default.profraw"
+        $PROFRAW = "default.profraw"
         $PROFDATA = "default.profdata"
         
+        # 1. profraw 파일이 있는지 확인
         if (Test-Path $PROFRAW) {
+            Write-Host "Found $PROFRAW. Generating report..."
+            
+            # 데이터 병합
             & "C:\Program Files\LLVM\bin\llvm-profdata.exe" merge -sparse $PROFRAW -o $PROFDATA
+            
+            # 상세 리포트 생성 (다운로드용)
             & "C:\Program Files\LLVM\bin\llvm-cov.exe" show ./build/run_tests.exe -instr-profile=$PROFDATA > coverage_report.txt
+            
+            # 요약 리포트 출력 (GitHub Actions 로그 확인용)
             & "C:\Program Files\LLVM\bin\llvm-cov.exe" report ./build/run_tests.exe -instr-profile=$PROFDATA
         } else {
-            Write-Error "Error: default.profraw not found in build directory!"
+            Write-Error "Error: $PROFRAW not found! Test execution might have failed to generate profile data."
             exit 1
         }
       shell: powershell
