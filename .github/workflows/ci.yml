@@ -93,7 +93,6 @@ jobs:
     # 4. vcpkg 설치 및 GTest 준비
     - name: Setup vcpkg and Install Dependencies
       run: |
-        # 캐시 폴더가 없으면 생성 (이 부분이 핵심!)
         if (!(Test-Path "${{ github.workspace }}/vcpkg/b_cache")) {
           New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/vcpkg/b_cache"
         }
@@ -102,7 +101,8 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           ./vcpkg/bootstrap-vcpkg.bat
         }
-        ./vcpkg/vcpkg install --triplet x64-windows
+
+        .\vcpkg\vcpkg.exe install --triplet x64-windows
       shell: powershell
 
     # 5. CMake 구성 (vcpkg 툴체인 경로 정확히 지정)
