@@ -61,6 +61,9 @@ jobs:
         & $VCPKG_EXE install --triplet x64-windows --vcpkg-root $VCPKG_PATH --binarysource="clear;files,$CACHE_PATH,readwrite"
       shell: powershell
 
+    - name: Cleanup build directory
+      run: if (Test-Path build) { Remove-Item -Recurse -Force build }
+      shell: powershell
     # 5. CMake 구성 (vcpkg 툴체인 경로 정확히 지정)
     - name: Configure CMake
       run: >
