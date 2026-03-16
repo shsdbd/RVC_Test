@@ -75,6 +75,10 @@ jobs:
         -DCMAKE_CXX_CPPCHECK="C:/Program Files/Cppcheck/cppcheck.exe;--enable=all;--inconclusive;--force;--inline-suppr;--error-exitcode=1;--suppress=missingIncludeSystem"
       shell: powershell
 
+    # [추가된 단계] 6. 실제 빌드 수행
+    - name: Build
+      run: cmake --build build --target run_tests
+      shell: powershell
     # 6. 구글 테스트 실행 (강력한 경로 추적 버전)
     - name: Run Tests
       run: |
