@@ -61,6 +61,7 @@ if(CPPCHECK_EXE)
         "--inline-suppr"
         "--error-exitcode=1"
         "--suppress=missingIncludeSystem"
+        "--suppress=unusedFunction:tests/*" # 추가: 테스트 폴더 내의 미사용 함수 지적 무시
     )
 endif()
 
